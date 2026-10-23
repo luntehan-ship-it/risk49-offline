@@ -1,6 +1,11 @@
 // All amounts are integer cents. Payouts round half up to a cent.
 export const SAMPLE=[60,45,50,30,75,70,105,65,70,90,0,0,20,15,95,10,5,70,75,20,50,60,20,0,85,55,40,30,35,65,75,90,100,90,10,70,5,45,20,10,5,75,95,50,95,70,30,30,30].map(x=>x*100);
 export const defaults={p:47,q:47,cap:null,limit:null,feeRate:0,rebateRate:0,fixedFee:0,weight:50,seconds:8};
+// Fixed mapping from the user's reference image. Do not rotate by calendar year.
+export const ZODIAC=Object.freeze(Object.fromEntries(['马','蛇','龙','兔','虎','牛','鼠','猪','狗','鸡','猴','羊'].map((name,start)=>[name,Object.freeze(Array.from({length:Math.floor((48-start)/12)+1},(_,k)=>start+12*k))])));
+export function selectionIndices(selection){if(typeof selection==='string'&&selection.startsWith('z:')){const indices=ZODIAC[selection.slice(2)];if(!indices)throw Error('无效生肖');return [...indices];}const index=Number(selection);if(!Number.isInteger(index)||index<0||index>=49)throw Error('号码必须为 01—49');return [index];}
+export function selectionEntries(selection,delta){return selectionIndices(selection).map(index=>({index,delta}));}
+export function detailOrder(plan,mode){const values=mode==='risk'?plan.f:plan.r;return values.map((_,i)=>i).sort((a,b)=>values[a]-values[b]||a-b);}
 export function cents(v){const s=String(v).trim();if(!/^[+-]?\d+(\.\d{1,2})?$/.test(s))throw Error('金额需为数字，最多两位小数');const n=Math.round(Number(s)*100);if(!Number.isSafeInteger(n)||Math.abs(n)>100000000)throw Error('单笔金额不能超过 100 万元');return n;}
 export function validate(b,s){if(!Array.isArray(b)||!b.length||b.some(x=>!Number.isSafeInteger(x)||x<0||x>100000000))throw Error('累计金额必须为非负金额，单号不超过 100 万元');for(const k of ['p','q'])if(!Number.isFinite(s[k])||s[k]<=0||s[k]>1000||Math.abs(s[k]*100-Math.round(s[k]*100))>1e-6)throw Error('赔率必须大于 0、不超过 1000，最多两位小数');for(const k of ['feeRate','rebateRate'])if(!Number.isFinite(s[k])||s[k]<0||s[k]>100)throw Error('费率必须在 0—100% 之间');for(const k of ['fixedFee','cap','limit'])if(s[k]!==null&&(!Number.isSafeInteger(s[k])||s[k]<0||s[k]>100000000))throw Error('预算、限额及固定费用必须为 0—100 万元');if(!Number.isFinite(s.weight)||s.weight<0||s.weight>100)throw Error('权重必须在 0—100 之间');if(!Number.isFinite(s.seconds)||s.seconds<1||s.seconds>30)throw Error('求解时间必须在 1—30 秒之间');}
 export function fees(H,s){return H===0?0:s.fixedFee+Math.floor(H*s.feeRate/100+.5)-Math.floor(H*s.rebateRate/100+.5);}
